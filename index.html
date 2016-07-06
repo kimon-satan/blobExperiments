@@ -61,6 +61,11 @@
 			            (c - a)* u.y * (1.0 - u.x) + 
 			            (d - b) * u.x * u.y;
 			}
+
+			vec2 getPolar(in vec2 p) {
+				//convert to polar 		
+				return vec2( length(p)*2.0 , atan(p.y,p.x));
+			}
 			
 			void main()	{
 				
@@ -72,12 +77,13 @@
 				pos.x -= 1.0;
 				pos.y -= resolution.y * 1.0/resolution.x;
 				
-				//convert to polar 
-				float r = length(pos)*2.0;
-    			float angle = atan(pos.y,pos.x);
+				vec2 polPos = getPolar(pos);
+
+				vec2 dpos = pos;
+				dpos.x += sin(ts) * 0.1;
 
     			//normalised angle
-    			float nangle = angle/TWO_PI;
+    			float nangle = polPos.y/TWO_PI;
     			nangle += 0.4999999;
 				
     			//quantised angle
@@ -85,7 +91,7 @@
 				float ni = mod(i + 1.0/slices, 1.0);
 				float f = fract(nangle * slices); //how much to interpolate
 
-				float displace = sin(angle);
+				float displace = sin(polPos.y);
 				//get the current step
 				float ri = noise(vec2(i * noise_disp, ts + displace)); //use sin of angle for avoiding block changes
 
@@ -96,13 +102,13 @@
 				float noise_i = mix(ri, rni, smoothstep(0.,1.,f)); //interpolation for angle
 				noise_i = 0.5 + noise_i * 0.5; //squash range to 0.5 -> 1.0
 
-				float lum_i = smoothstep( 0.1 + noise_i , 0.07 + noise_i , r); //threshold for the edge
+				float lum_i = smoothstep( 0.1 + noise_i , 0.07 + noise_i , polPos.x); //threshold for the edge
 				float lum = noise_i * lum_i; //mix with radial noise
 
-				float segment = floor(segments * r/noise_i); //determine which segment
+				float segment = floor(segments * polPos.x/noise_i); //determine which segment
 
 				//make normalised coordinates for the segment
-				vec2 tex = vec2(fract(nangle * slices + noise_i), fract(segments * r/noise_i)); 
+				vec2 tex = vec2(fract(nangle * slices + noise_i), fract(segments * polPos.x/noise_i)); 
 
 				tex.x *= (segment + 1.0); //tile x-wise according to segement
 				tex = fract(tex);
@@ -111,7 +117,7 @@
 				vec3 col = vec3(1.0, 0.5, 0.5);
 
 				gl_FragColor = vec4(vec3(cell * lum) * col,1.0);
-
+				//gl_FragColor = vec4(vec3(noise_i), 1.0);
 
 			}
 
