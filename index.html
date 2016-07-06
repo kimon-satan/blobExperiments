@@ -22,42 +22,97 @@
 			float PI  = 3.141592653589793;
 			float TWO_PI = 6.283185307179586;
 
+			//2D noise
 			float random (vec2 st) {
 			    return fract(sin(dot(st.xy,
 			                         vec2(12.9898,78.233)))*
 			        43758.5453123);
 			}
 
-			float rand (float x)
+			//1D noise function
+			float random (float x)
 			{
 				return fract(sin(x)* 43758.5453123);
+			}
+
+			float noise (in vec2 st) {
+			    vec2 i = floor(st);
+			    vec2 f = fract(st);
+
+			    // Four corners in 2D of a tile
+			    float a = random(i);
+			    float b = random(i + vec2(1.0, 0.0));
+			    float c = random(i + vec2(0.0, 1.0));
+			    float d = random(i + vec2(1.0, 1.0));
+
+			    // Smooth Interpolation
+
+			    // Cubic Hermine Curve.  Same as SmoothStep()
+			    vec2 u = f*f*(3.0-2.0*f);
+			    // u = smoothstep(0.,1.,f);
+
+			    // Mix 4 coorners porcentages
+			    return mix(a, b, u.x) + 
+			            (c - a)* u.y * (1.0 - u.x) + 
+			            (d - b) * u.x * u.y;
 			}
 			
 			void main()	{
 				
-				float a = time * 0.0001;
-				vec2 pos = 4.0 * gl_FragCoord.xy / resolution.x;
-				pos.x -= 2.0;
-				pos.y -= resolution.y * 2.0/resolution.x;
+				//quantise time
+				float ts = time * 0.001;
+				float ti = floor(ts);
+				float tf = fract(ts);
+
+				//resolution
+
+				vec2 npos =  gl_FragCoord.xy / resolution.x;
+				vec2 pos =  npos * 2.0;
+				pos.x -= 1.0;
+				pos.y -= resolution.y * 1.0/resolution.x;
+				
 				
 				vec2 ref = vec2(0.0,-1.0);
 
 				float r = length(pos)*2.0;
 
-    			float angle = atan(pos.y,pos.x)/TWO_PI;
-    			angle += 0.5;
-
-    			float i = floor(angle * 12.0)/12.0;
+				//convert to polar 
+    			float angle = atan(pos.y,pos.x);
+    			float nangle = angle/TWO_PI;
+    			nangle += 0.5;
+				
+    			//quantise for angle
+    			float i = floor(nangle * 12.0)/12.0;
 				float ni = mod(i + 1.0/12.0, 1.0);
-				float f = fract(angle * 12.0);
+				float f = fract(nangle * 12.0); //how much to interpolate
 
-				float ri = rand(i);
-				float rni = rand(ni );
+				//get the two steps
+				float ri = noise(vec2(i * 10.0,ts + sin(angle))); 
+				float rni = noise(vec2(ni * 10.0,ts + sin(angle)));
 			
-				float noise = mix(ri, rni, smoothstep(0.,1.,f));
-				float lum = step(r, 0.5 + (0.5 + noise * 0.5));
+				float noise_i = mix(ri, rni, smoothstep(0.,1.,f)); //interpolation for angle
+				noise_i = (0.5 + noise_i * 0.5);
+				float lum_i = smoothstep( 0.1 + noise_i , 0.07 + noise_i , r);
+				float lum = noise_i * lum_i;
 
-				gl_FragColor=vec4(vec3(lum),1.0);
+				float level = floor(10.0 * r/noise_i);
+
+				vec2 tex = vec2(fract(nangle * 12.0 + noise_i), fract(10.0 * r/noise_i));
+
+				//float div = 1.0; //1.0/(level + 1.0);
+				//tex.x = pow(mod(tex.x, div),0.5);
+				tex.x *= (level + 1.0);
+				tex = fract(tex);
+				float cell = 1.0 - distance(tex, vec2(0.5,0.5));
+
+				vec3 col = vec3(1.0, 0.5, 0.5);
+				//gl_FragColor=vec4(vec3(cell * lum) * col ,1.0);
+				//gl_FragColor=vec4(vec3(tex.x, tex.y, 0.0),1.0);
+				// npos.x *= 10.0;
+				// npos = fract(npos);
+				// cell = distance(npos , vec2(0.5,0.25));
+				// cell *= 2.0;
+				gl_FragColor = vec4(vec3(cell * lum) * col,1.0);
 			}
 		</script>
 
