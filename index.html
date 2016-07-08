@@ -53,12 +53,10 @@
 			    float d = random(i + vec2(1.0, 1.0));
 
 			    // Smooth Interpolation
-
-			    // Cubic Hermine Curve.  Same as SmoothStep()
-			    //vec2 u = f*f*(3.0-2.0*f);
+			    // Cubic Hermine Curve.
 			    vec2 u = smoothstep(0.,1.,f);
 
-			    // Mix 4 coorners porcentages
+			    // Mix 4 corners percentages
 			    return mix(a, b, u.x) + 
 			            (c - a)* u.y * (1.0 - u.x) + 
 			            (d - b) * u.x * u.y;
@@ -90,8 +88,10 @@
 			
 				//radial interpolated noise 
 				float noise_i = mix(ri, rni, smoothstep(0.,1.,f)); //interpolation for angle
+				noise_i = mix(noise_i, noise(vec2(sin(p.y), ts + sin(p.y))), 0.25);
 				noise_i = 0.5 + noise_i * 0.5; //squash range to 0.5 -> 1.0
-			
+
+
 				return noise_i;
 			}
 
@@ -131,7 +131,7 @@
 				vec3 col = vec3(1.0, 0.5, 0.5);
 
 				gl_FragColor = vec4(vec3(cell * lum) * col,1.0);
-				//gl_FragColor = vec4(vec3(noise_i),1.0);
+
 
 			}
 
