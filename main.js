@@ -6,7 +6,23 @@ document.body.appendChild( renderer.domElement );
 
 var width = window.innerWidth;
 var height = window.innerHeight;
+var canvas;
+var mousePos = new THREE.Vector2(0,0);
 
+canvas = renderer.domElement;
+
+/*canvas.addEventListener("mousemove", function (e) {
+        
+    mousePos.set(e.clientX, e.clientY);
+
+ }, false);*/
+
+canvas.addEventListener("touchstart", function (e) {
+
+    mousePos.set(e.touches[0].clientX /width, e.touches[0].clientY / height);
+    console.log(mousePos);
+
+}, false);
 
 
 camera = new THREE.Camera();
@@ -19,7 +35,8 @@ var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
 
 uniforms = {
 	time:       { value: 1.0 },
-	resolution: { value: new THREE.Vector2() }
+	resolution: { value: new THREE.Vector2() },
+	mouse:  	{value: mousePos }
 };
 
 uniforms.resolution.value.x = renderer.domElement.width;
@@ -42,8 +59,11 @@ var ellapsedTime = 0;
 
 function render() {
 
-	ellapsedTime = new Date().getTime() - startTime;
+	ellapsedTime = (new Date().getTime() - startTime) * 0.001;
 	uniforms.time.value = ellapsedTime;
+	uniforms.mouse.value = mousePos;
+
+	//console.log(ellapsedTime);
 	
 	renderer.render( scene, camera );
 	requestAnimationFrame( render );

@@ -16,6 +16,10 @@
 		</script>
 
 		<script id="fragmentShader" type="x-shader/x-fragment">
+			#ifdef GL_ES
+				precision highp float;
+			#endif
+
 			uniform vec2 resolution;
 			uniform float time;
 			uniform vec2 mouse;
@@ -26,41 +30,34 @@
 			float slices = 12.0;
 			float segments = 10.0;
 			float noise_disp = 10.0;
-			float ts = 0.0;
 
 
-			//2D noise
-			float random (vec2 st) {
-			    return fract(sin(dot(st.xy,
-			                         vec2(12.9898,78.233)))*
-			        43758.5453123);
+			float mod289(float x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+			vec4 mod289(vec4 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
+			vec4 perm(vec4 x){return mod289(((x * 34.0) + 1.0) * x);}
+
+			float noise(in vec3 p){
+			    vec3 a = floor(p);
+			    vec3 d = p - a;
+			    d = d * d * (3.0 - 2.0 * d);
+
+			    vec4 b = a.xxyy + vec4(0.0, 1.0, 0.0, 1.0);
+			    vec4 k1 = perm(b.xyxy);
+			    vec4 k2 = perm(k1.xyxy + b.zzww);
+
+			    vec4 c = k2 + a.zzzz;
+			    vec4 k3 = perm(c);
+			    vec4 k4 = perm(c + 1.0);
+
+			    vec4 o1 = fract(k3 * (1.0 / 41.0));
+			    vec4 o2 = fract(k4 * (1.0 / 41.0));
+
+			    vec4 o3 = o2 * d.z + o1 * (1.0 - d.z);
+			    vec2 o4 = o3.yw * d.x + o3.xz * (1.0 - d.x);
+
+			    return o4.y * d.y + o4.x * (1.0 - d.y);
 			}
 
-			//1D noise function
-			float random (float x)
-			{
-				return fract(sin(x)* 43758.5453123);
-			}
-
-			float noise (in vec2 st) {
-			    vec2 i = floor(st);
-			    vec2 f = fract(st);
-
-			    // Four corners in 2D of a tile
-			    float a = random(i);
-			    float b = random(i + vec2(1.0, 0.0));
-			    float c = random(i + vec2(0.0, 1.0));
-			    float d = random(i + vec2(1.0, 1.0));
-
-			    // Smooth Interpolation
-			    // Cubic Hermine Curve.
-			    vec2 u = smoothstep(0.,1.,f);
-
-			    // Mix 4 corners percentages
-			    return mix(a, b, u.x) + 
-			            (c - a)* u.y * (1.0 - u.x) + 
-			            (d - b) * u.x * u.y;
-			}
 
 			vec2 getPolar(in vec2 p) 
 			{
@@ -68,29 +65,25 @@
 				return vec2( length(p)*2.0 , atan(p.y,p.x));
 			}
 
-			float getRadialNoise(in vec2 p) //radius not used
+			float radialNoise(float pheta, float r, float segs ) //returns a radial noise field
 			{
 				//normalised angle
-    			float na = p.y/TWO_PI;
+    			float na = pheta/TWO_PI;
     			na += 0.4999999;
-				
+
     			//quantised angle
-    			float i = floor(na * slices)/slices;
-				float ni = mod(i + 1.0/slices, 1.0);
-				float f = fract(na * slices); //how much to interpolate
+    			float i = floor(na * segs)/segs;
+				float ni = mod(i + 1.0/segs, 1.0);
+				float f = fract(na * segs); //how much to interpolate
 
 				//get the current step
-				float ri = noise(vec2(i * noise_disp, ts + sin(i))); //use sin of angle for avoiding block changes
+				float ri = noise(vec3(i * noise_disp, time + sin(pheta), r)); 
 
 				//get the next step
-				float rni = noise(vec2(ni * noise_disp,ts + sin(ni))); 
+				float rni = noise(vec3(ni * noise_disp, time + sin(pheta), r)); 
 
-			
 				//radial interpolated noise 
-				float noise_i = mix(ri, rni, smoothstep(0.,1.,f)); //interpolation for angle
-				noise_i = mix(noise_i, noise(vec2(sin(p.y), ts + sin(p.y))), 0.25);
-				noise_i = 0.5 + noise_i * 0.5; //squash range to 0.5 -> 1.0
-
+				float noise_i = mix(ri, rni, smoothstep(0.0, 1.0, f)); //interpolation for angle
 
 				return noise_i;
 			}
@@ -99,27 +92,26 @@
 			
 			void main()	{
 				
-				//quantise time
-				ts = time * 0.001;
+
 				//normalised coordinates
 				vec2 pos =  gl_FragCoord.xy * 2.0 / resolution.x;
 				pos.x -= 1.0;
 				pos.y -= resolution.y * 1.0/resolution.x;
 				
 				vec2 polPos = getPolar(pos);
-				vec2 dPolPos = getPolar(pos + vec2(sin(ts) * 0.05, cos(ts) * 0.05));
 
 				//normalised angle
     			float nangle = polPos.y/TWO_PI;
     			nangle += 0.4999999;
 
-				float noise_i = getRadialNoise(polPos);
+				float noise_i = radialNoise(polPos.y, polPos.x, slices);
+				noise_i = noise_i * 0.5 + 0.5;
 
 
 				float lum_i = smoothstep( 0.1 + noise_i , 0.07 + noise_i , polPos.x); //threshold for the edge
 				float lum = noise_i * lum_i; //mix with radial noise
 
-				float segment = floor(segments * polPos.x/noise_i); //determine which segment
+				float segment = floor(segments* polPos.x/noise_i); //determine which segment
 
 				//make normalised coordinates for the segment
 				vec2 tex = vec2(fract(nangle * slices + noise_i), fract(segments * polPos.x/noise_i)); 
@@ -131,7 +123,7 @@
 				vec3 col = vec3(1.0, 0.5, 0.5);
 
 				gl_FragColor = vec4(vec3(cell * lum) * col,1.0);
-
+				//gl_FragColor = vec4(vec3(noise_i),1.0);
 
 			}
 
