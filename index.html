@@ -29,7 +29,7 @@
 
 			float slices = 12.0;
 			float segments = 10.0;
-			float noise_disp = 10.0;
+			float noise_disp = 2.0;
 
 
 			float mod289(float x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
@@ -65,27 +65,9 @@
 				return vec2( length(p)*2.0 , atan(p.y,p.x));
 			}
 
-			float radialNoise(float pheta, float r, float segs ) //returns a radial noise field
+			float radialNoise(float pheta, float r, vec3 step, float displace) //returns a radial noise field
 			{
-				//normalised angle
-    			float na = pheta/TWO_PI;
-    			na += 0.4999999;
-
-    			//quantised angle
-    			float i = floor(na * segs)/segs;
-				float ni = mod(i + 1.0/segs, 1.0);
-				float f = fract(na * segs); //how much to interpolate
-
-				//get the current step
-				float ri = noise(vec3(i * noise_disp, time + sin(pheta), r)); 
-
-				//get the next step
-				float rni = noise(vec3(ni * noise_disp, time + sin(pheta), r)); 
-
-				//radial interpolated noise 
-				float noise_i = mix(ri, rni, smoothstep(0.0, 1.0, f)); //interpolation for angle
-
-				return noise_i;
+				return noise(vec3(step.x + cos(pheta) * displace, step.y + sin(pheta) * displace, step.z + r)); 
 			}
 
 
@@ -104,7 +86,7 @@
     			float nangle = polPos.y/TWO_PI;
     			nangle += 0.4999999;
 
-				float noise_i = radialNoise(polPos.y, polPos.x, slices);
+				float noise_i = radialNoise(polPos.y, polPos.x, vec3(time, time*0.5, time* 0.25), 1.5);
 				noise_i = noise_i * 0.5 + 0.5;
 
 
