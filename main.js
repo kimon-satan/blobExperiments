@@ -11,16 +11,16 @@ var mousePos = new THREE.Vector2(0,0);
 
 canvas = renderer.domElement;
 
-/*canvas.addEventListener("mousemove", function (e) {
+canvas.addEventListener("mousemove", function (e) {
         
-    mousePos.set(e.clientX, e.clientY);
+    mousePos.set(e.clientX/width, e.clientY/height);
 
- }, false);*/
+ }, false);
 
 canvas.addEventListener("touchstart", function (e) {
 
     mousePos.set(e.touches[0].clientX /width, e.touches[0].clientY / height);
-    console.log(mousePos);
+    //console.log(mousePos);
 
 }, false);
 

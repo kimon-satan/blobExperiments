@@ -62,7 +62,7 @@
 			vec2 getPolar(in vec2 p) 
 			{
 				//convert to polar 		
-				return vec2( length(p)*2.0 , atan(p.y,p.x));
+				return vec2(atan(p.y,p.x), length(p)*2.0);
 			}
 
 			float radialNoise(float pheta, float r, vec3 step, float displace) //returns a radial noise field
@@ -76,35 +76,49 @@
 				
 
 				//normalised coordinates
-				vec2 pos =  gl_FragCoord.xy * 2.0 / resolution.x;
-				pos.x -= 1.0;
-				pos.y -= resolution.y * 1.0/resolution.x;
-				
+				vec2 pos =  (gl_FragCoord.xy/ resolution.xy - 0.5) * 2.0;
+				pos.y *= resolution.y/resolution.x;
+
+				//polar coordinates
 				vec2 polPos = getPolar(pos);
+				
 
-				//normalised angle
-    			float nangle = polPos.y/TWO_PI;
-    			nangle += 0.4999999;
+				//this doesn't work
+				//polPos.y += sin(polPos.x + mouse.y) * mouse.x;
 
-				float noise_i = radialNoise(polPos.y, polPos.x, vec3(time, time*0.5, time* 0.25), 1.5);
+				float noise_i = radialNoise(
+					polPos.x, polPos.y, 
+					vec3(time * 0.5,  0.0, 0.0)
+					, 1.5);
+				
+
 				noise_i = noise_i * 0.5 + 0.5;
 
-
-				float lum_i = smoothstep( 0.1 + noise_i , 0.07 + noise_i , polPos.x); //threshold for the edge
+				float lum_i = smoothstep( 0.1 + noise_i , 0.07 + noise_i , polPos.y); //threshold for the edge
 				float lum = noise_i * lum_i; //mix with radial noise
 
-				float segment = floor(segments* polPos.x/noise_i); //determine which segment
+
+				float bulge = pow(polPos.y/noise_i, sin(time + polPos.x) * 0.15 + sin(time) * 0.3 + 1.0);
+				//float bulge = polPos.y/noise_i;
+				float seg_i = floor(segments * bulge); //determine which segment
+				float seg_f = fract(segments * bulge);
+
+				//normalised angle
+    			float nangle = polPos.x/TWO_PI;
+    			nangle += 0.4999999;
 
 				//make normalised coordinates for the segment
-				vec2 tex = vec2(fract(nangle * slices + noise_i), fract(segments * polPos.x/noise_i)); 
+				vec2 tex = vec2(fract(nangle * slices ), seg_f); 
 
-				tex.x *= (segment + 1.0); //tile x-wise according to segement
-				tex = fract(tex);
+				//tex.x *= (seg_i + 1.0); //tile x-wise according to segement
+				//tex = fract(tex);
 
 				float cell = 1.0 - distance(tex, vec2(0.5,0.5)); //shade
 				vec3 col = vec3(1.0, 0.5, 0.5);
 
 				gl_FragColor = vec4(vec3(cell * lum) * col,1.0);
+				//gl_FragColor = vec4(vec3(seg_i/segments),1.0);
+				//gl_FragColor = vec4(vec3(polPos.x),1.0);
 				//gl_FragColor = vec4(vec3(noise_i),1.0);
 
 			}
