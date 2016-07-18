@@ -28,6 +28,12 @@
 			float scale = 2.0;
 
 
+			float random (vec2 st) {
+				 return fract(sin(dot(st.xy,
+				                         vec2(12.9898,78.233)))*
+				        43758.5453123);
+			}
+
 			float mod289(float x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
 			vec4 mod289(vec4 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
 			vec4 perm(vec4 x){return mod289(((x * 34.0) + 1.0) * x);}
@@ -58,44 +64,60 @@
 
 			void main() {
 
-				scale = mouse.x * 4.0 + 0.5;
 				vec2 pos = ( gl_FragCoord.xy / resolution.xy ) - 0.5;
 				pos *= vec2(2.0, resolution.y * 2.0/ resolution.x) * scale;
 
 				vec2 mouseP = mouse - .5;
 				mouseP *= vec2(2.0, resolution.y * -2.0/ resolution.x) * scale;
 				
-				vec2 center = vec2(mouseP.y);
+				vec2 center = vec2(0.0);
 
-				float x = pos.x - center.x;
-				float y = pos.y - center.y; 
-
-				float theta = atan(y, x);
+				float theta = atan(pos.y, pos.x);
 				float r = distance(center , pos);
 
-				float d = noise(vec3(cos(theta) * 2. , sin(theta) * 2., 0. )) * 0.5 + 0.5;
-
-				float ns = 20.0;
-				float nr = (r  * d);
-
-
-				vec2 factor = vec2(pow(nr,-0.75));
-
-
-				float radial = noise(vec3( x * factor.x * ns  , y  * factor.y * ns, nr)) ;
+				float d = noise(vec3(cos(theta) , sin(theta) , r ));
 				
-				float thresh = pow(nr,0.7);
-				float lum = smoothstep(thresh, thresh + 0.02, radial);
+
+
+				
+
+
+				float pout = 0.0;
+				
+
+				for(int i = 0; i < 10; i++){
+
+					float div = float(i) + 2.0;
+					float dr = r * (0.5 + float(i) * 0.05 + d * (0.5 - float(i) * 0.05) );
+					float thresh = pow(min(1.0, dr),2.0);
+
+					
+					vec2 factor = vec2(pow(dr ,  -1. + div * mouse.x )); // some variation in factor
+					vec2 tpos = pos;
+					tpos *= factor;
+					tpos += vec2(float(i) * 0.05, float(i) * 0.05); // a bit of dsiplacement
+					tpos *= div;
+
+
+					vec2 f = fract(tpos);
+					float l = pow(1.0 - distance(f, vec2(0.5,0.5)),2.);
+					tpos = floor(tpos);
+					tpos /= div;
+					float sc = 0.1 + 0.05 * float(i) ; 
+					float c =  sc + random(tpos) * (1.0 - sc);
+					pout = max(step(0.25 + thresh * 0.75, l * c ) * c * l, pout);
+				}
 
 
 				float mp = 1.0 - step(0.05, distance(pos , mouseP));
 				float cp = 1.0 - step(0.05, distance(pos , center ));					
 				
 
-
 				vec3 markers = vec3(0., cp,  0.) + vec3(mp,0., 0.);
 
-				gl_FragColor = vec4( vec3(lum) ,1.0 );
+
+
+				gl_FragColor = vec4( vec3( pout),1.0 );
 
 	
 
