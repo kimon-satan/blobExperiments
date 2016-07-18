@@ -31,11 +31,11 @@
 			float random (vec2 st) {
 				 return fract(sin(dot(st.xy,
 				                         vec2(12.9898,78.233)))*
-				        43758.5453123);
+				        438.545323);
 			}
 
 			float random (float x) {
-				return fract(sin(x * 3839.2)*43758.5453123);
+				return fract(sin(x * 389.2)*4378.5453123);
 			}
 
 			//  Simplex 3D Noise 
@@ -117,30 +117,37 @@
 
 			void main() {
 
+				scale = 2.;
+
 				vec2 res = vec2(2.0, resolution.y * -2.0/ resolution.x) * scale;
 
 				vec2 pos = ( gl_FragCoord.xy / resolution.xy ) - 0.5;
 				pos *= res;
 
-				vec2 mouseP = mouse - .5;
-				mouseP *= res;
+				/*vec2 mouseP = mouse - .5;
+				mouseP *= res;*/
 				
-				vec2 center = vec2(0.0);
-
-				float theta = atan(pos.y, pos.x);
-				float r = distance(center , pos);
-				float nr = r*2./length(res);
-
+				vec2 center = vec2(0.);
 				float lum = 0.;
 				vec3 o = vec3(0.);
+				float noiseScale = 10.;
+				float displace = mouse.x;
+
+				vec2 v = pos - center;
+				float theta = atan(v.y, v.x);
+				float r = length(v);
+				float nr = min(1.0, r); 
+				float nrd = nr + 0.1 - snoise(vec3(cos(theta),sin(theta), 0.)) * 0.2;
+				float thresh = pow(nrd , mouse.y );
+				vec2 t = v * noiseScale;
+				
+				t *= pow(nr, -1.0 + mouse.x * 2.0 ); 
 
 				for(int i = 0; i < 3; i ++)
 				{
 
-					vec2 t = pos * (12.0 + float(i) * 2. );
-					t *= pow(nr, -1. + mouse.x * 2.0); 
+
 					float d = snoise(vec3(t.x , t.y , float(i) ));
-					float thresh = pow(nr,0.5);
 					vec3 col = vec3(random(float(i + 1)), random(float(i + 1)/2.0),random(float(i + 1)/3.0));
 					float l = smoothstep(thresh, thresh * 1.05, d) * d ;
 					float b = step(lum, l);
@@ -156,15 +163,15 @@
 
 			
 
-				float mp = 1.0 - step(0.05, distance(pos , mouseP));
+				/*float mp = 1.0 - step(0.05, distance(pos , mouseP));
 				float cp = 1.0 - step(0.05, distance(pos , center ));					
 				
 
-				vec3 markers = vec3(0., cp,  0.) + vec3(mp,0., 0.);
+				vec3 markers = vec3(0., cp,  0.) + vec3(mp,0., 0.);*/
 
 
 
-				gl_FragColor = vec4( o,1.0 );
+				gl_FragColor = vec4( vec3(o),1.0 );
 
 	
 
