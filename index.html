@@ -29,9 +29,9 @@
 			float PI  = 3.141592653589793;
 			float TWO_PI = 6.283185307179586;
 
-			float slices = 6.0;
-			float segments = 4.0;
-			float noise_disp = 2.0;
+			float slices = 8.0;
+			float segments = 2.0;
+			float noise_disp = 1.0;
 			float scale = 2.0;
 
 			float drawShape(in vec2 p){
@@ -48,11 +48,12 @@
 	            float c = 1.0; // Set the maximum, bearing in mind that it is multiplied by 4.
 	            
 	            // Draw four overlapping shapes (circles, in this case) using the darken blend 
-	            // at various positions on the tile.
-				c = min(c, drawShape(p - vec2(.14 + sin(time) * 0.25, .32)));
+	            // at various positions on the tile
+
+				c = min(c, drawShape(p - vec2(.14 , .32)));
 		        c = min(c, drawShape(p - vec2(.8, .80)));
 		        
-		        c = min(c, drawShape(p - vec2(.16, .11+ sin(time *2.2) * 0.25)));
+		        c = min(c, drawShape(p - vec2(.16, .11 )));
 		        c = min(c, drawShape(p - vec2(.5, .50)));
 		    
 		        // Draw four smaller circles at various positions on the tile.
@@ -75,7 +76,7 @@
         	vec3 tex2D(vec2 p){
             
 	            float c = cellTex(p);
-	        	//vec3 col = vec3(c, c * c*   .5, c *c*  .5) + (cellTex(p*4.))*.05 - .025; // Bio green.
+	        	//vec3 col = vec3(c, c * c*   .5, c *c*  .5) + (cellTex(p*2.))*.05 - .025; // Bio green.
 	            vec3 col = vec3(c*c, c*sqrt(c), c) + (cellTex(p*6.))*.05 - .025; // Blueish.
 
 	            col = clamp(col, 0., 1.);
@@ -127,6 +128,7 @@
 
 			
 			void main()	{
+
 				
 				vec2 mouseP = mouse - .5;
 				mouseP *= vec2(2.0, resolution.y * -2.0/ resolution.x) * scale;
@@ -165,13 +167,13 @@
 					, 1.5);
 				
 
-				noise_i = noise_i * 0.5 + 0.5;
+				noise_i = noise_i * 0.2 + 0.8;
 
 				float lum_i = smoothstep(  0.05 + noise_i  ,  noise_i , polPos.y); //threshold for the edge
 				float lum = noise_i * lum_i; //mix with radial noise
 
 
-				float bulge = pow(polPos.y/noise_i,  mouse.x * 10.0)  ;
+				float bulge = pow(polPos.y/noise_i,  1.0)  ;
 				float lum_i_s = smoothstep( noise_i/segments , 0.1 +  noise_i/segments, bulge); //threshold for the edge
 
 				
@@ -187,7 +189,7 @@
 				//make normalised coordinates for the segment
 				//vec2 tex = vec2(fract(nangle * slices ), seg_f); 
 				vec2 tex = vec2(abs(nangle) * slices  , segments * bulge );
-				vec2 texCenter = vec2(abs(nangle) * slices * bulge  , bulge * segments);
+				vec2 texCenter = vec2(sin(polPos.x) * bulge * segments, cos(polPos.x) * bulge * segments); //vec2(pos.x , bulge * segments);
 
 				//tex.x *= (seg_i + 1.0); //tile x-wise according to segement
 				//tex = fract(tex);
@@ -200,9 +202,9 @@
 				vec3 cellsC = tex2D(texCenter);
 				vec3 cells = tex2D(tex);
 
-				gl_FragColor = vec4(cells  * lum_i * lum_i_s ,1.0);
+				//gl_FragColor = vec4(cells  * lum_i ,1.0);
 
-				//gl_FragColor = vec4(cells * lum_i * lum_i_s + cellsC * (1.0 - lum_i_s)  ,1.0);
+				gl_FragColor = vec4(cells * lum_i * lum_i_s + cellsC * (1.0 - lum_i_s)  ,1.0);
 				//
 
 				
