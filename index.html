@@ -170,25 +170,28 @@
     			float i_n = clamp((1. - nrho * 2. ) -  0.25 * n2, 0., 1.); //current lum
 
 
+    			float l =  1.0 - smoothstep(op - 0.1, op , nrho);
+    			float lc = smoothstep(ip - 0.1, ip , nrho);
+    			
 
-    			float l = smoothstep(0.05, 0.07, o_n);
-    			float lc =  step(0.01, i_n);
+    			float r_o = clamp((nrho - ip)/(op - ip), 0., 1.);
+    			vec3 col = tex2D(vec2(r_o * segments, ustheta * slices));
 
-    			float p = clamp((nrho - ip)/(op - ip), 0., 1.) ;
+				float r_c = pow(nrho/i_n , 0.25);
 
     			//vec3 col = tex2D(vec2(o_n * segments , ustheta *slices));
 
-    			float rc = nrho * 0.5/ip;
-    			float r = pow(p, .25);
     			
-    			vec3 colC = tex2D(vec2(cos(theta)  * rc * segments, sin(theta) * rc * segments));
-    			vec3 col = tex2D(vec2(cos(theta)  * r * segments, sin(theta) * r * segments));
+    			
+    			
+    			vec3 colC = tex2D(vec2(cos(theta)  * r_c * segments, sin(theta) * r_c * segments));
+    			
 
 				vec3 markers = vec3(0., cp,  0.) + vec3(mp,0., 0.);
  
 
 				//gl_FragColor = vec4(vec3(colC * lc * l),1.0);
-				gl_FragColor = vec4( clamp(colC, 0., 1.) * lc + clamp(col, 0., 1.) * l * (1.0 - lc),1.0);
+				gl_FragColor = vec4( col * l,1.0);
 				//gl_FragColor = vec4(vec3( lc  * colC + (l - lc) * col ),1.0);
 
 			}
