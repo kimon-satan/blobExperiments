@@ -29,8 +29,8 @@
 			float PI  = 3.141592653589793;
 			float TWO_PI = 6.283185307179586;
 
-			float slices = 20.0;
-			float segments = 2.0;
+			float slices = 10.0;
+			float segments = 1.0;
 			float noise_disp = 1.0;
 			float scale = 2.0;
 
@@ -84,6 +84,8 @@
 	            return mix(col, col.yzx, dot(sin(p*12. - sin(p.yx*12. + c*6.283)), vec2(.5))*.15 + .15);
 	            return col;
         	}
+
+
 
 
 
@@ -148,7 +150,8 @@
 
 				//normalised angle
     			float ustheta = pow(abs(theta / TWO_PI),1.5);
-    			float nrho = min(1.0, rho);
+    			float ustheta2 = abs(theta / TWO_PI);
+    			float nrho = clamp(rho, 0. , 1.);
 
     			float horiz_disp = min( 0., cos(theta + PI/2.0));
 
@@ -158,20 +161,35 @@
     			gain = gain * 0.25 + 0.5;
 
     			float n = noise(vec3(ustheta * 30. * gain.x , ustheta * 30. * gain.y , 0.));
-    			float on = (1. - nrho) -  0.5 * n;
+    			float n2 = noise(vec3(cos(theta) + time, sin(theta) + time , 0.));
     			
+    			float op = 1. - .25 * n; //edges
+    			float ip = .5 - .25 * n2; //edges
 
-    			float l = smoothstep(0.05, 0.07, on);
-    			float lc =  (1.0 - smoothstep(on/segments, on/segments  + 0.1, nrho/on)) * l;
+    			float o_n = clamp((1. - nrho) -  0.25 * n, 0. ,1.); //current lum ... can probably shorten
+    			float i_n = clamp((1. - nrho * 2. ) -  0.25 * n2, 0., 1.); //current lum
 
-    			vec3 col = tex2D(vec2(on * segments , ustheta *slices));
-    			vec3 colC = tex2D(vec2(cos(theta)  * nrho/on * segments, sin(theta) * nrho/on * segments));
+
+
+    			float l = smoothstep(0.05, 0.07, o_n);
+    			float lc =  step(0.01, i_n);
+
+    			float p = clamp((nrho - ip)/(op - ip), 0., 1.) ;
+
+    			//vec3 col = tex2D(vec2(o_n * segments , ustheta *slices));
+
+    			float rc = nrho * 0.5/ip;
+    			float r = pow(p, .25);
+    			
+    			vec3 colC = tex2D(vec2(cos(theta)  * rc * segments, sin(theta) * rc * segments));
+    			vec3 col = tex2D(vec2(cos(theta)  * r * segments, sin(theta) * r * segments));
 
 				vec3 markers = vec3(0., cp,  0.) + vec3(mp,0., 0.);
+ 
 
-
-				//gl_FragColor = vec4(vec3(col * l),1.0);
-				gl_FragColor = vec4(vec3( lc  * colC + (l - lc) * col ),1.0);
+				//gl_FragColor = vec4(vec3(colC * lc * l),1.0);
+				gl_FragColor = vec4( clamp(colC, 0., 1.) * lc + clamp(col, 0., 1.) * l * (1.0 - lc),1.0);
+				//gl_FragColor = vec4(vec3( lc  * colC + (l - lc) * col ),1.0);
 
 			}
 
