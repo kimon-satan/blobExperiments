@@ -24,13 +24,14 @@
 			uniform vec2 resolution;
 			uniform float time;
 			uniform vec2 mouse;
+			uniform float scale;
 
 			float PI  = 3.141592653589793;
 			float TWO_PI = 6.283185307179586;
 
 			//characteristics
 
-			float scale = 2.0;
+			
 			float slices = 8.0; //theta wise repeat (outer only)
 			float segments = 1.0; //rho wise repeat
 			float c_size = 0.5; //proportional size of center
@@ -207,6 +208,7 @@
 
 	</head>
 	<body>
+		<script type="text/javascript" src="dat.gui.min.js"></script>
 		<script src="three.min.js"></script>
 		<script type="text/javascript" src="main.js"></script>
 	</body>

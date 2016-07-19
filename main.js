@@ -33,15 +33,15 @@ scene = new THREE.Scene();
 
 var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
 
-uniforms = {
+var uniforms = {
 	time:       { value: 1.0 },
 	resolution: { value: new THREE.Vector2() },
-	mouse:  	{value: mousePos }
+	mouse:  	{value: mousePos },
+	scale:      {value: 2.0, gui: true, min: 1.0, max: 10.0}
 };
 
 uniforms.resolution.value.x = renderer.domElement.width;
 uniforms.resolution.value.y = renderer.domElement.height;
-
 
 var material = new THREE.ShaderMaterial( {
 	uniforms: uniforms,
@@ -71,5 +71,42 @@ function render() {
 }
 
 render();
+
+/*----------------------------------------GUI----------------------------------------------*/
+
+var ControlPanel = function() {
+  
+  for (var property in uniforms) {
+    if (uniforms.hasOwnProperty(property)) {
+        if(uniforms[property].gui){
+
+        	this[property] = uniforms[property].value;
+        }
+    }
+  }
+
+  
+};
+
+window.onload = function() {
+  var controlPanel = new ControlPanel();
+  var gui = new dat.GUI();
+  var events = {};
+  
+  for (var property in uniforms) {
+  	if (uniforms.hasOwnProperty(property)) {
+  		if(uniforms[property].gui){
+  			events[property] = gui.add(controlPanel, property, uniforms[property].min, uniforms[property].max);
+  			  events[property].onChange(function(value) {
+			  console.log(value, property);
+			  uniforms[property].value = value;
+			});
+  		}
+  	}
+  }
+
+
+
+};
 
 
