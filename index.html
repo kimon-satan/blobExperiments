@@ -28,9 +28,18 @@
 			float PI  = 3.141592653589793;
 			float TWO_PI = 6.283185307179586;
 
-			float slices = 10.0;
-			float segments = 1.0;
+			//characteristics
+
 			float scale = 2.0;
+			float slices = 10.0; //theta wise repeat (outer only)
+			float segments = 1.0; //rho wise repeat
+			float c_size = 0.5; //proportional size of center
+			float o_amp = 0.25; //amp of noise
+			float c_amp = 0.25; 
+			float theta_warp = 1.5;
+			vec2 move_distort = vec2(.4, 2.); //for irregular acceleration
+			float move_mul = .5;
+			float move_add = .5;
 
 
 			///////////////////////////////////TEXTURE FUNCTIONS//////////////////////////////////////
@@ -113,7 +122,6 @@
 			    return o4.y * d.y + o4.x * (1.0 - d.y);
 			}
 
-
 			///////////////////////////////////OTHER HELPERS///////////////////////////////////
 
 			mat2 rotate2d(float _angle){
@@ -124,16 +132,15 @@
 			
 			void main()	{
 
-				vec2 trans = vec2(2.0, resolution.y * 2.0/ resolution.x) * scale;
 
-				//normalised coordinates
-				
+				//generate normalised coordinates
+
+				vec2 trans = vec2(2.0, resolution.y * 2.0/ resolution.x) * scale;
 
 				vec2 pos = ( gl_FragCoord.xy / resolution.xy ) - 0.5;
 				pos *= trans;
 
 				vec2 center = vec2(0.);
-
 
 				//FOR DEBUGGING WITH MOUSE
 				/*
@@ -156,23 +163,25 @@
 
 				//unsigned angle for symmetry
     			float ustheta = abs(theta / TWO_PI);
-    			float ustheta2 = pow(ustheta, 1.5); //a bit of shaping to squash towards the bottom
+    			float ustheta2 = pow(ustheta, theta_warp); //a bit of shaping to squash towards the bottom
 
     			float n_rho = clamp(rho, 0., 1.); //clamp the rho
 
-    			float h_disp = min( 0., cos(theta + PI/2.0)); // a bit of horizontal displacement 
+    			float right_field = min( 0., cos(theta + PI/2.0)); // a distance field on the right only
+
+    			float asymmetry = .5;
 
     			vec2 move = (vec2(sin(time * 5.), cos(time * 5.)) + 1.)/2.;
-    			move.x = pow(move.x,0.4) + h_disp * 0.5;
-    			move.y = pow(move.y,2.0);
-    			move = move * 0.25 + 0.5;
+    			move.x = pow(move.x, move_distort.x) + right_field * asymmetry;
+    			move.y = pow(move.y, move_distort.y);
+    			move = move * move_mul + move_add;
 
     			float o_noise = noise(vec3(ustheta2 * 30. * move.x , ustheta2 * 30. * move.y , 0.));
     			float c_noise = noise(vec3(cos(theta) + time, sin(theta) + time , 0.));
     			
     			//edges
-    			float o_edge = 1. - .25 * o_noise; 
-    			float c_edge = .5 - .25 * c_noise; 
+    			float o_edge = 1. - o_amp * o_noise; 
+    			float c_edge = c_size - c_amp * c_size * c_noise; 
 
     			//masks with judicious blending for no gaps
     			float o_lum =  1.0 - smoothstep(o_edge - 0.1, o_edge , n_rho); 
