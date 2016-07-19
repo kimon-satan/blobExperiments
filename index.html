@@ -31,15 +31,17 @@
 			//characteristics
 
 			float scale = 2.0;
-			float slices = 10.0; //theta wise repeat (outer only)
+			float slices = 8.0; //theta wise repeat (outer only)
 			float segments = 1.0; //rho wise repeat
 			float c_size = 0.5; //proportional size of center
-			float o_amp = 0.25; //amp of noise
-			float c_amp = 0.25; 
+			float o_amp = 0.1; //amp of noise
+			float o_step = 20.; //the noise step of the outer edge
+			float c_amp = 0.1; 
 			float theta_warp = 1.5;
 			vec2 move_distort = vec2(.4, 2.); //for irregular acceleration
 			float move_mul = .5;
 			float move_add = .5;
+			float move_freq = 2.;
 
 
 			///////////////////////////////////TEXTURE FUNCTIONS//////////////////////////////////////
@@ -171,12 +173,12 @@
 
     			float asymmetry = .5;
 
-    			vec2 move = (vec2(sin(time * 5.), cos(time * 5.)) + 1.)/2.;
-    			move.x = pow(move.x, move_distort.x) + right_field * asymmetry;
+    			vec2 move = (vec2(sin(time * move_freq), cos(time * move_freq)) + 1.)/2.;
+    			move.x = pow(move.x, move_distort.x) + right_field * asymmetry; // a time delay for the right hand side
     			move.y = pow(move.y, move_distort.y);
     			move = move * move_mul + move_add;
 
-    			float o_noise = noise(vec3(ustheta2 * 30. * move.x , ustheta2 * 30. * move.y , 0.));
+    			float o_noise = noise(vec3(ustheta2 * o_step * move.x , ustheta2 * o_step * move.y , 0.)); //symmetrical noise
     			float c_noise = noise(vec3(cos(theta) + time, sin(theta) + time , 0.));
     			
     			//edges
