@@ -20,7 +20,6 @@
 				precision highp float;
 			#endif
 
-			//http://glslsandbox.com/e#33972.13
 
 			uniform vec2 resolution;
 			uniform float time;
@@ -31,8 +30,10 @@
 
 			float slices = 10.0;
 			float segments = 1.0;
-			float noise_disp = 1.0;
 			float scale = 2.0;
+
+
+			///////////////////////////////////TEXTURE FUNCTIONS//////////////////////////////////////
 
 			float drawShape(in vec2 p){
             
@@ -72,7 +73,6 @@
             
         	}
 
-        	//
         	vec3 tex2D(vec2 p){
             
 	            float c = cellTex(p);
@@ -85,9 +85,7 @@
 	            return col;
         	}
 
-
-
-
+        	///////////////////////////////////NOISE FUNCTIONS///////////////////////////////////
 
 			float mod289(float x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
 			vec4 mod289(vec4 x){return x - floor(x * (1.0 / 289.0)) * 289.0;}
@@ -116,10 +114,7 @@
 			}
 
 
-			float radialNoise(float theta, float r, vec3 step, float displace) //returns a radial noise field
-			{
-				return noise(vec3(step.x + cos(theta) * displace, step.y + sin(theta) * displace, step.z + r)); 
-			}
+			///////////////////////////////////OTHER HELPERS///////////////////////////////////
 
 			mat2 rotate2d(float _angle){
 			    return mat2(cos(_angle),-sin(_angle),
@@ -129,70 +124,71 @@
 			
 			void main()	{
 
-				
-				vec2 mouseP = mouse - .5;
-				mouseP *= vec2(2.0, resolution.y * -2.0/ resolution.x) * scale;
+				vec2 trans = vec2(2.0, resolution.y * 2.0/ resolution.x) * scale;
+
 				//normalised coordinates
+				
+
 				vec2 pos = ( gl_FragCoord.xy / resolution.xy ) - 0.5;
-				pos *= vec2(2.0, resolution.y * 2.0/ resolution.x) * scale;
+				pos *= trans;
 
 				vec2 center = vec2(0.);
 
+
+				//FOR DEBUGGING WITH MOUSE
+				/*
+				vec2 mouseP = mouse - .5;
+				mouseP *= trans;
+				mouseP.y *= -1.;
+				
+				float cp = 1.0 - step(0.02, distance(pos , mouseP));
+				float mp = 1.0 - step(0.02, distance(pos , center));
+				vec3 markers = vec3(0., cp,  0.) + vec3(mp,0., 0.);
+
+				*/
+
+				//rotate the coordinate space around the center
 				pos = rotate2d(PI/2.) * pos;
 
+				//get polar coordinates
 				float theta = atan(pos.y, pos.x);
 				float rho = distance(pos, center); 
 
+				//unsigned angle for symmetry
+    			float ustheta = abs(theta / TWO_PI);
+    			float ustheta2 = pow(ustheta, 1.5); //a bit of shaping to squash towards the bottom
 
-				float cp = 1.0 - step(0.02, distance(pos , mouseP));
-				float mp = 1.0 - step(0.02, distance(pos , center));
+    			float n_rho = clamp(rho, 0., 1.); //clamp the rho
 
+    			float h_disp = min( 0., cos(theta + PI/2.0)); // a bit of horizontal displacement 
 
-				//normalised angle
-    			float ustheta = pow(abs(theta / TWO_PI),1.5);
-    			float ustheta2 = abs(theta / TWO_PI);
-    			float nrho = clamp(rho, 0. , 1.);
+    			vec2 move = (vec2(sin(time * 5.), cos(time * 5.)) + 1.)/2.;
+    			move.x = pow(move.x,0.4) + h_disp * 0.5;
+    			move.y = pow(move.y,2.0);
+    			move = move * 0.25 + 0.5;
 
-    			float horiz_disp = min( 0., cos(theta + PI/2.0));
-
-    			vec2 gain = (vec2(sin(time * 5.), cos(time * 5.)) + 1.)/2.;
-    			gain.x = pow(gain.x,0.4) + horiz_disp * 0.5;
-    			gain.y = pow(gain.y,2.0);
-    			gain = gain * 0.25 + 0.5;
-
-    			float n = noise(vec3(ustheta * 30. * gain.x , ustheta * 30. * gain.y , 0.));
-    			float n2 = noise(vec3(cos(theta) + time, sin(theta) + time , 0.));
+    			float o_noise = noise(vec3(ustheta2 * 30. * move.x , ustheta2 * 30. * move.y , 0.));
+    			float c_noise = noise(vec3(cos(theta) + time, sin(theta) + time , 0.));
     			
-    			float op = 1. - .25 * n; //edges
-    			float ip = .5 - .25 * n2; //edges
+    			//edges
+    			float o_edge = 1. - .25 * o_noise; 
+    			float c_edge = .5 - .25 * c_noise; 
 
-    			float o_n = clamp((1. - nrho) -  0.25 * n, 0. ,1.); //current lum ... can probably shorten
-    			float i_n = clamp((1. - nrho * 2. ) -  0.25 * n2, 0., 1.); //current lum
-
-
-    			float l =  1.0 - smoothstep(op - 0.1, op , nrho);
-    			float lc = smoothstep(ip - 0.1, ip , nrho);
+    			//masks with judicious blending for no gaps
+    			float o_lum =  1.0 - smoothstep(o_edge - 0.1, o_edge , n_rho); 
+    			float c_lum = 1.0 - smoothstep(c_edge - 0.1, c_edge , n_rho); 
     			
 
-    			float r_o = clamp((nrho - ip)/(op - ip), 0., 1.);
-    			vec3 col = tex2D(vec2(r_o * segments, ustheta * slices));
+    			float o_nrho = clamp((n_rho - c_edge)/(o_edge - c_edge), 0., 1.);
+    			vec3 o_col = tex2D(vec2(o_nrho * segments, ustheta2 * slices)); //texturing 
 
-				float r_c = pow(nrho/i_n , 0.25);
-
-    			//vec3 col = tex2D(vec2(o_n * segments , ustheta *slices));
-
+				float c_nrho = n_rho/c_edge;    			
+    			vec3 c_col = tex2D(vec2(cos(theta) * c_nrho * segments, sin(theta) * c_nrho * segments));
     			
-    			
-    			
-    			vec3 colC = tex2D(vec2(cos(theta)  * r_c * segments, sin(theta) * r_c * segments));
-    			
-
-				vec3 markers = vec3(0., cp,  0.) + vec3(mp,0., 0.);
- 
-
-				//gl_FragColor = vec4(vec3(colC * lc * l),1.0);
-				gl_FragColor = vec4( col * l,1.0);
-				//gl_FragColor = vec4(vec3( lc  * colC + (l - lc) * col ),1.0);
+    			//NB. currently using same segments for inner and outer .. this might be changed
+				
+				gl_FragColor = vec4( vec3(o_col * o_lum * (1.0 - c_lum) + c_lum * c_col),1.0);
+				
 
 			}
 
