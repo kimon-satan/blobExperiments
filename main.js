@@ -37,7 +37,21 @@ var uniforms = {
 	time:       { value: 1.0 },
 	resolution: { value: new THREE.Vector2() },
 	mouse:  	{value: mousePos },
-	scale:      {value: 2.0, gui: true, min: 1.0, max: 10.0}
+
+	scale:      {value: 2.0, gui: true, min: 1.0, max: 10.0},
+	slices:      {value: 8.0, gui: true, min: 1.0, max: 20.0},
+	segments:      {value: 1.0, gui: true, min: 1.0, max: 10.0},
+	c_size:      {value: 0.5, gui: true, min: 0.1, max: 0.8},
+	o_amp:      {value: 0.1, gui: true, min: 0.0, max: 0.8}, //needs changing
+	o_step:      {value: 20.0, gui: true, min: 0.0, max: 30.0},
+	c_amp:      {value: 0.1, gui: true, min: 0.0, max: 1.0},
+	theta_warp:      {value: 1.5, gui: true, min: 0.0, max: 4.0},
+	move_mul:      {value: .5, gui: true, min: 0.0, max: 1.0},
+	move_add:      {value: .5, gui: true, min: 0.0, max: 1.0},
+	move_freq:      {value: 2., gui: true, min: 0.01, max: 10.0},
+	move_distort: 	{value: new THREE.Vector2(.4,2.), gui: true, min: 0.0, max: 4.0}
+
+
 };
 
 uniforms.resolution.value.x = renderer.domElement.width;
@@ -79,8 +93,14 @@ var ControlPanel = function() {
   for (var property in uniforms) {
     if (uniforms.hasOwnProperty(property)) {
         if(uniforms[property].gui){
-
-        	this[property] = uniforms[property].value;
+        	if( uniforms[property].value instanceof THREE.Vector2)
+        	{
+				this[property + "_x"] = uniforms[property].value.x;
+				this[property + "_y"] = uniforms[property].value.y;
+        	}else{
+        		this[property] = uniforms[property].value;
+        	}
+        	
         }
     }
   }
@@ -96,11 +116,32 @@ window.onload = function() {
   for (var property in uniforms) {
   	if (uniforms.hasOwnProperty(property)) {
   		if(uniforms[property].gui){
-  			events[property] = gui.add(controlPanel, property, uniforms[property].min, uniforms[property].max);
-  			  events[property].onChange(function(value) {
-			  console.log(value, property);
-			  uniforms[property].value = value;
-			});
+
+  			if( uniforms[property].value instanceof THREE.Vector2)
+        	{	
+        		var coord = ["x", "y"];
+
+        		for(var i = 0; i < 2; i++)
+        		{
+
+	        		events[property + "_" + coord[i]] = gui.add(controlPanel, property + "_" + coord[i], uniforms[property].min, uniforms[property].max);
+		  			
+		  			events[property + "_" + coord[i]].onChange(function(value) {
+		  				var key = this.property.substring(0, this.property.length - 2);
+					 	uniforms[key].value[this.property.substring(this.property.length - 1)] = value;
+					});
+
+	  			}
+
+
+        	}else{
+	  			events[property] = gui.add(controlPanel, property, uniforms[property].min, uniforms[property].max);
+	  			
+	  			events[property].onChange(function(value) {
+				  uniforms[this.property].value = value;
+				});
+
+  			}
   		}
   	}
   }

@@ -25,6 +25,18 @@
 			uniform float time;
 			uniform vec2 mouse;
 			uniform float scale;
+			uniform float slices; //theta wise repeat (outer only)
+			uniform float segments; //rho wise repeat
+			uniform float c_size; //proportional size of center
+			uniform float o_amp; //amp of noise
+			uniform float o_step; //the noise step of the outer edge
+			uniform float c_amp; 
+			uniform float theta_warp;
+			uniform vec2 move_distort; //for irregular acceleration
+			uniform float move_mul;
+			uniform float move_add;
+			uniform float move_freq;
+
 
 			float PI  = 3.141592653589793;
 			float TWO_PI = 6.283185307179586;
@@ -32,17 +44,9 @@
 			//characteristics
 
 			
-			float slices = 8.0; //theta wise repeat (outer only)
-			float segments = 1.0; //rho wise repeat
-			float c_size = 0.5; //proportional size of center
-			float o_amp = 0.1; //amp of noise
-			float o_step = 20.; //the noise step of the outer edge
-			float c_amp = 0.1; 
-			float theta_warp = 1.5;
-			vec2 move_distort = vec2(.4, 2.); //for irregular acceleration
-			float move_mul = .5;
-			float move_add = .5;
-			float move_freq = 2.;
+
+
+	
 
 
 			///////////////////////////////////TEXTURE FUNCTIONS//////////////////////////////////////
