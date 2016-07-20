@@ -25,6 +25,9 @@
 			uniform float time;
 			uniform vec2 mouse;
 			uniform float scale;
+
+			//Blob characteristics
+			
 			uniform float slices; //theta wise repeat (outer only)
 			uniform float segments; //rho wise repeat
 			uniform float c_size; //proportional size of center
@@ -36,12 +39,18 @@
 			uniform float move_mul;
 			uniform float move_add;
 			uniform float move_freq;
+			uniform vec3 color_1;
+			uniform vec3 color_2;
+			uniform vec3 color_3;
+			uniform float colpow_1;
+			uniform float colpow_2;
+			uniform float colpow_3;
 
 
 			float PI  = 3.141592653589793;
 			float TWO_PI = 6.283185307179586;
 
-			//characteristics
+
 
 			
 
@@ -53,6 +62,7 @@
 
 			float drawShape(in vec2 p){
             
+            	// NB. Might interesting to play with shapes here ?
             	// Wrappable circle distance. The squared distance, to be more precise.
             	p = fract(p) - 0.5;    
             	return dot(p, p); 
@@ -90,15 +100,18 @@
         	}
 
         	vec3 tex2D(vec2 p){
-            
-	            float c = cellTex(p);
-	        	//vec3 col = vec3(c, c * c*   .5, c *c*  .5) + (cellTex(p*2.))*.05 - .025; // Bio green.
-	            vec3 col = vec3(c*c, c*sqrt(c), c) + (cellTex(p*6.))*.05 - .025; // Blueish.
 
-	            col = clamp(col, 0., 1.);
-	            // Sinusoidally mixing in a complimentary color, of sorts, for a bit of variance.
-	            return mix(col, col.yzx, dot(sin(p*12. - sin(p.yx*12. + c*6.283)), vec2(.5))*.15 + .15);
-	            return col;
+        		//mixing 3 colors
+            
+	            float l2 = pow(clamp(cellTex(p), 0., 1.), colpow_2); 
+	            l2 *= smoothstep(colpow_1* 0.99, colpow_1, l2);
+	        	
+	            vec3 c1_c2 = mix(color_1, color_2, l2);
+
+	            float m =  dot(sin(p*4. - sin(p.yx*4. + l2*6.)), vec2(.5))* colpow_3 + colpow_3;
+	            vec3 c1_c2_c3 = mix(c1_c2,color_3, m);
+
+	            return c1_c2_c3;
         	}
 
         	///////////////////////////////////NOISE FUNCTIONS///////////////////////////////////
@@ -204,7 +217,7 @@
     			//NB. currently using same segments for inner and outer .. this might be changed
 				
 				gl_FragColor = vec4( vec3(o_col * o_lum * (1.0 - c_lum) + c_lum * c_col),1.0);
-				
+
 
 			}
 

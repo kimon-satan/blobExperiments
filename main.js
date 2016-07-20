@@ -49,8 +49,13 @@ var uniforms = {
 	move_mul:      {value: .5, gui: true, min: 0.0, max: 1.0},
 	move_add:      {value: .5, gui: true, min: 0.0, max: 1.0},
 	move_freq:      {value: 2., gui: true, min: 0.01, max: 10.0},
-	move_distort: 	{value: new THREE.Vector2(.4,2.), gui: true, min: 0.0, max: 4.0}
-
+	move_distort: 	{value: new THREE.Vector2(.4,2.), gui: true, min: 0.0, max: 4.0},
+	color_1:        {value: new THREE.Vector3(1.,1.,1.), gui: true, type: "color"},
+	color_2:        {value: new THREE.Vector3(1.,1.,1.), gui: true, type: "color"},
+	color_3:        {value: new THREE.Vector3(0.,0.,0.), gui: true, type: "color"},
+	colpow_1:      {value: 0.001, gui: true, min: 0.001, max: 0.5, step: 0.001},
+	colpow_2:      {value: 1., gui: true, min: 0.01, max: 3.0},
+	colpow_3:      {value: 1., gui: true, min: 0.01, max: 3.0}
 
 };
 
@@ -97,6 +102,10 @@ var ControlPanel = function() {
         	{
 				this[property + "_x"] = uniforms[property].value.x;
 				this[property + "_y"] = uniforms[property].value.y;
+			}
+			else if(uniforms[property].type == "color")
+	  		{	
+	  			this[property] = "#ffffff";
         	}else{
         		this[property] = uniforms[property].value;
         	}
@@ -133,8 +142,23 @@ window.onload = function() {
 
 	  			}
 
+	  		}
+	  		else if(uniforms[property].type == "color")
+	  		{
+	  			events[property] = gui.addColor(controlPanel, property);
 
-        	}else{
+	  			events[property].onChange(function(value) {
+					
+	  				var col = hexToFloat(value);
+
+					uniforms[this.property].value.x = col[0]; 
+					uniforms[this.property].value.y = col[1]; 
+					uniforms[this.property].value.z = col[2]; 
+
+	  			});
+        	}
+        	else
+        	{
 	  			events[property] = gui.add(controlPanel, property, uniforms[property].min, uniforms[property].max);
 	  			
 	  			events[property].onChange(function(value) {
@@ -148,6 +172,24 @@ window.onload = function() {
 
 
 
+
+
+
+
+
 };
 
+
+/////////////////////////////////HELPERS/////////////////////////////////
+
+function hexToFloat(hex) {
+
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? 
+        [ parseInt(result[1], 16)/255.,
+         parseInt(result[2], 16)/255.,
+         parseInt(result[3], 16)/255.
+        ]
+    	: null;
+}
 
