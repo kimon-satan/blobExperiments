@@ -28,6 +28,8 @@
 
 			//Blob characteristics
 			
+			uniform float seed; //for hashable functions
+
 			uniform float slices; //theta wise repeat (outer only)
 			uniform float segments; //rho wise repeat
 			uniform float c_size; //proportional size of center
@@ -39,23 +41,31 @@
 			uniform float move_mul;
 			uniform float move_add;
 			uniform float move_freq;
-			uniform vec3 color_1;
-			uniform vec3 color_2;
-			uniform vec3 color_3;
-			uniform float colpow_1;
-			uniform float colpow_2;
-			uniform float colpow_3;
+			uniform vec3 bg_color;
+			uniform vec3 fg_color;
+			uniform vec3 hl_color;
+			uniform float fg_pow;
+			uniform float hl_pow;
+			uniform float hl_mul;
+			uniform float cell_detune;
+
 
 
 			float PI  = 3.141592653589793;
 			float TWO_PI = 6.283185307179586;
 
+			///////////////////////////////////HELPERS///////////////////////////////////
 
+			mat2 rotate2d(float _angle){
+			    return mat2(cos(_angle),-sin(_angle),
+			                sin(_angle),cos(_angle));
+			}
 
-			
+			float hash(float x)
+			{
+    			return fract(sin(x * 12341.3784)*43758.5453123);
+			}
 
-
-	
 
 
 			///////////////////////////////////TEXTURE FUNCTIONS//////////////////////////////////////
@@ -73,27 +83,27 @@
             
          
 	            float c = 1.0; // Set the maximum, bearing in mind that it is multiplied by 4.
-	            
 	            // Draw four overlapping shapes (circles, in this case) using the darken blend 
 	            // at various positions on the tile
 
-				c = min(c, drawShape(p - vec2(.14 , .32)));
-		        c = min(c, drawShape(p - vec2(.8, .80)));
+	            for(int i = 0; i < 4; i++)
+	            {
+
+	            	vec2 v = vec2(0. , float(i) * .25 );
+	            	vec2 d = vec2(hash(float(i) + seed) * cell_detune * .25, hash(float(i) + seed * 2.) + cell_detune * .25);
+					c = min(c, drawShape(p - v + d));
 		        
-		        c = min(c, drawShape(p - vec2(.16, .11 )));
-		        c = min(c, drawShape(p - vec2(.5, .50)));
-		    
-		        // Draw four smaller circles at various positions on the tile.
+		        }  
+
+		       	for(int i = 0; i < 4; i++)
+	            {
+
+	            	vec2 v = vec2(.25 + .5 * mod(float(i),2.), .25 + .5 * floor(float(i)/2.) );
+	            	vec2 d = vec2(hash(float(i) + seed * 1.1) *  -cell_detune + cell_detune/2., hash(float(i) + seed * 2.1) * -cell_detune + cell_detune/2.);
+					c = min(c, drawShape(vec2(p - v + d) * (1.25 + 0.25 * hash(seed) ) ));
 		        
-		        p *= 1.4142; 
-		        
-		        c = min(c, drawShape(p - vec2(.39, .10)));
-		        c = min(c, drawShape(p - vec2(.20, .63))); 
-		        
-		        // More shapes produce a more convincing pattern, but you could cut
-		        // these two out and still produce a decent image.
-		        c = min(c, drawShape(p - vec2(.40, .30)));
-		        c = min(c, drawShape(p - vec2(.80, .90)));  
+		        }  
+
 	            
 	            return sqrt(c*4.);
             
@@ -101,17 +111,14 @@
 
         	vec3 tex2D(vec2 p){
 
-        		//mixing 3 colors
+        		//calculate luminocities
             
-	            float l2 = pow(clamp(cellTex(p), 0., 1.), colpow_2); 
-	            l2 *= smoothstep(colpow_1* 0.99, colpow_1, l2);
+	            float fgl = pow(clamp(cellTex(p), 0., 1.), fg_pow); 
+	            float hll =  dot(sin(p * hl_mul - sin(p.yx * hl_mul + fgl * hl_mul * 1.5)), vec2(.5))* hl_pow + hl_pow;
 	        	
-	            vec3 c1_c2 = mix(color_1, color_2, l2);
+	            vec3 c_mix = mix(bg_color, hl_color, hll); 
+	            return mix(c_mix,fg_color, fgl);
 
-	            float m =  dot(sin(p*4. - sin(p.yx*4. + l2*6.)), vec2(.5))* colpow_3 + colpow_3;
-	            vec3 c1_c2_c3 = mix(c1_c2,color_3, m);
-
-	            return c1_c2_c3;
         	}
 
         	///////////////////////////////////NOISE FUNCTIONS///////////////////////////////////
@@ -142,12 +149,7 @@
 			    return o4.y * d.y + o4.x * (1.0 - d.y);
 			}
 
-			///////////////////////////////////OTHER HELPERS///////////////////////////////////
 
-			mat2 rotate2d(float _angle){
-			    return mat2(cos(_angle),-sin(_angle),
-			                sin(_angle),cos(_angle));
-			}
 
 			
 			void main()	{
@@ -212,12 +214,11 @@
     			vec3 o_col = tex2D(vec2(o_nrho * segments, ustheta2 * slices)); //texturing 
 
 				float c_nrho = n_rho/c_edge;    			
-    			vec3 c_col = tex2D(vec2(cos(theta) * c_nrho * segments, sin(theta) * c_nrho * segments));
+    			vec3 c_col = tex2D(vec2(cos(theta) * c_nrho , sin(theta) * c_nrho ));
     			
     			//NB. currently using same segments for inner and outer .. this might be changed
 				
 				gl_FragColor = vec4( vec3(o_col * o_lum * (1.0 - c_lum) + c_lum * c_col),1.0);
-
 
 			}
 
