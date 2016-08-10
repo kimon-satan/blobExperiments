@@ -12,7 +12,7 @@ var mousePos = new THREE.Vector2(0,0);
 canvas = renderer.domElement;
 
 canvas.addEventListener("mousemove", function (e) {
-        
+
     mousePos.set(e.clientX/width, e.clientY/height);
 
  }, false);
@@ -43,6 +43,8 @@ var uniforms = {
 	slices:      {value: 8.0, gui: true, min: 1.0, max: 20.0},
 	segments:      {value: 1.0, gui: true, min: 1.0, max: 10.0},
 	c_size:      {value: 0.5, gui: true, min: 0.1, max: 0.8},
+  c_scale:      {value: 1.0, gui: true, min: 0.1, max: 2.0},
+  cell_detail:      {value: 0.01, gui: true, min: 0.0, max: 4.0, step: 0.01},
 	o_amp:      {value: 0.1, gui: true, min: 0.0, max: 0.8}, //needs changing
 	o_step:      {value: 20.0, gui: true, min: 0.0, max: 30.0},
 	c_amp:      {value: 0.1, gui: true, min: 0.0, max: 1.0},
@@ -85,10 +87,10 @@ function render() {
 	uniforms.mouse.value = mousePos;
 
 	//console.log(ellapsedTime);
-	
+
 	renderer.render( scene, camera );
 	requestAnimationFrame( render );
-	
+
 }
 
 render();
@@ -96,7 +98,7 @@ render();
 /*----------------------------------------GUI----------------------------------------------*/
 
 var ControlPanel = function() {
-  
+
   for (var property in uniforms) {
     if (uniforms.hasOwnProperty(property)) {
         if(uniforms[property].gui){
@@ -106,39 +108,39 @@ var ControlPanel = function() {
 				this[property + "_y"] = uniforms[property].value.y;
 			}
 			else if(uniforms[property].type == "color")
-	  		{	
+	  		{
 	  			this[property] = "#ffffff";
         	}else{
         		this[property] = uniforms[property].value;
         	}
-        	
+
         }
     }
   }
 
-  
+
 };
 
-window.onload = function() 
+window.onload = function()
 {
   var controlPanel = new ControlPanel();
   var gui = new dat.GUI();
   gui.remember(controlPanel);
   var events = {};
-  
+
   for (var property in uniforms) {
   	if (uniforms.hasOwnProperty(property)) {
   		if(uniforms[property].gui){
 
   			if( uniforms[property].value instanceof THREE.Vector2)
-        	{	
+        	{
         		var coord = ["x", "y"];
 
         		for(var i = 0; i < 2; i++)
         		{
 
 	        		events[property + "_" + coord[i]] = gui.add(controlPanel, property + "_" + coord[i], uniforms[property].min, uniforms[property].max);
-		  			
+
 		  			events[property + "_" + coord[i]].onChange(function(value) {
 		  				var key = this.property.substring(0, this.property.length - 2);
 					 	uniforms[key].value[this.property.substring(this.property.length - 1)] = value;
@@ -152,19 +154,19 @@ window.onload = function()
 	  			events[property] = gui.addColor(controlPanel, property);
 
 	  			events[property].onChange(function(value) {
-					
+
 	  				var col = hexToFloat(value);
 
-					uniforms[this.property].value.x = col[0]; 
-					uniforms[this.property].value.y = col[1]; 
-					uniforms[this.property].value.z = col[2]; 
+					uniforms[this.property].value.x = col[0];
+					uniforms[this.property].value.y = col[1];
+					uniforms[this.property].value.z = col[2];
 
 	  			});
         	}
         	else
         	{
 	  			events[property] = gui.add(controlPanel, property, uniforms[property].min, uniforms[property].max);
-	  			
+
 	  			events[property].onChange(function(value) {
 				  uniforms[this.property].value = value;
 				});
@@ -189,11 +191,10 @@ window.onload = function()
 function hexToFloat(hex) {
 
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? 
+    return result ?
         [ parseInt(result[1], 16)/255.,
          parseInt(result[2], 16)/255.,
          parseInt(result[3], 16)/255.
         ]
     	: null;
 }
-
