@@ -50,6 +50,7 @@
 			uniform float hl_pow;
 			uniform float hl_mul;
 			uniform float cell_detune;
+			uniform float c_fade;
 
 
 
@@ -207,10 +208,11 @@
 
     			float o_noise = noise(vec3(ustheta2 * o_step * move.x , ustheta2 * o_step * move.y , 0.)); //symmetrical noise
     			float c_noise = noise(vec3(cos(theta) + time, sin(theta) + time , 0.));
+					float r_noise = noise(vec3(cos(theta) + time, sin(theta) + time, 10.));
 
     			//edges
-    			float o_edge = 1. - o_amp * o_noise;
-    			float c_edge = c_size - c_amp * c_size * c_noise;
+    			float o_edge = 0.7 + o_amp * 0.3 * o_noise + o_amp * 0.3 * r_noise;
+    			float c_edge = c_size * 0.7 + c_amp * 0.3 * c_size * c_noise;
 
     			//masks with judicious blending for no gaps
     			float o_lum =  1.0 - smoothstep(o_edge - 0.1, o_edge , n_rho);
@@ -221,7 +223,7 @@
     			vec3 o_col = tex2D(vec2(o_nrho * segments, ustheta2 * slices)); //texturing
 
 					float c_nrho = n_rho/c_edge * c_scale;
-    			vec3 c_col = tex2D(vec2(cos(theta) * c_nrho , sin(theta) * c_nrho ));
+    			vec3 c_col = tex2D(vec2(cos(theta) * c_nrho , sin(theta) * c_nrho )) * c_fade;
 
     			//NB. currently using same segments for inner and outer .. this might be changed
 

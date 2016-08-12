@@ -59,8 +59,8 @@ var uniforms = {
 	fg_pow:      {value: 1., gui: true, min: 0.01, max: 3.0},
 	hl_pow:      {value: 1., gui: true, min: 0.01, max: 3.0},
 	hl_mul:      {value: 4., gui: true, min: 2., max: 15.},
-	cell_detune:      {value: .25, gui: true, min: 0., max: 1., step: 0.01}
-
+	cell_detune:      {value: .25, gui: true, min: 0., max: 1., step: 0.01},
+  c_fade:      {value: 0.01, gui: true, min: 0., max: 1., step: 0.01}
 };
 
 uniforms.resolution.value.x = renderer.domElement.width;
