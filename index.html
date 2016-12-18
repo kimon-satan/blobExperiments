@@ -52,6 +52,7 @@
 
 	uniform float cell_detail; //how to spread the cells
 	uniform float theta_warp;
+	uniform float warp_skew;
 
 	uniform vec3 bg_color;
 	uniform vec3 fg_color;
@@ -119,7 +120,7 @@
 			float r1 = -1.0 * hash(float(i) + seed * 1.1) * 2.0;
 			float r2 = -1.0 + hash(float(i) + seed * 2.1) * 2.0;
 			vec2 v = vec2(.25 + .5 * mod(float(i),2.), .25 + .5 * floor(float(i)/2.) );
-			vec2 d = vec2(r1 * cell_detune, r2 * cell_detune);
+			vec2 d = vec2(r1 * cell_detune * .25, r2 * cell_detune * .25);
 			float l = drawShape(vec2(p - v + d) * (1.25 + 0.25 * hash(seed) ) );
 			c = min(c, l + float(i + 4) * cell_detail * 0.05);
 
@@ -135,10 +136,12 @@
 		//calculate luminocities
 
 		float fgl = pow(clamp(cellTex(p), 0., 1.), fg_pow);
-		float hll =  dot(sin(p * hl_mul - sin(p.yx * hl_mul + fgl * hl_mul * 1.5)), vec2(.5))* hl_pow + hl_pow;
+		float hll =  dot(sin(p * hl_mul - sin(p.yx * hl_mul + fgl * hl_mul * 1.5)), vec2(.5));
 
-		vec3 c_mix = mix(bg_color, hl_color, hll);
+		vec3 c_mix = mix(bg_color, hl_color, clamp(pow(hll, hl_pow), 0., 1.));
 		return mix(c_mix,fg_color, fgl);
+
+		//return vec3(hll);
 
 	}
 
@@ -203,12 +206,13 @@
 		//get polar coordinates
 		float theta = atan(pos.y, pos.x);
 		float rho = distance(pos, center);
+		float n_rho = clamp(rho, 0., 1.); //clamp the rho
 
 		//unsigned angle for symmetry
 		float ustheta = abs(theta / TWO_PI);
-		float ustheta2 = pow(ustheta, theta_warp); //a bit of shaping to squash towards the bottom
 
-		float n_rho = clamp(rho, 0., 1.); //clamp the rho
+
+
 
 		float right_field = min( 0., cos(theta + PI/2.0)); // a distance field on the right only
 
@@ -221,7 +225,7 @@
 		move.x += right_field * asymmetry;
 
 
-		float o_noise = noise(vec3(ustheta2 * o_step + move.x , ustheta2 * o_step + move.y , seed)); //symmetrical noise
+		float o_noise = noise(vec3(ustheta * o_step + move.x , ustheta * o_step + move.y , seed)); //symmetrical noise
 		float c_noise = noise(vec3(cos(theta) + c_time, sin(theta) + c_time, 0.));
 		float r_noise = noise(vec3(cos(theta) + r_time, sin(theta) + r_time, 10.));
 
@@ -236,14 +240,17 @@
 
 
 		float o_nrho = clamp((n_rho - c_edge)/(o_edge - c_edge), 0., 1.);
+
+		float ustheta2 =  mix(ustheta, pow(ustheta, theta_warp), pow(o_nrho, warp_skew)); //a bit of shaping to squash towards the bottom
 		vec3 o_col = tex2D(vec2(o_nrho * segments, ustheta2 * slices)); //texturing
+
 
 		float c_nrho = n_rho/c_edge * c_scale;
 		vec3 c_col = tex2D(vec2(cos(theta) * c_nrho , sin(theta) * c_nrho )) * c_fade;
 
-		//NB. currently using same segments for inner and outer .. this might be changed
 
 		gl_FragColor = vec4( vec3(o_col * o_lum * (1.0 - c_lum) + c_lum * c_col),1.0);
+		//gl_FragColor = vec4( vec3(o_nrho),1.0);
 
 	}
 

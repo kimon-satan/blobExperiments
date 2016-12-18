@@ -41,6 +41,13 @@ var uniforms = {
 	resolution: { value: new THREE.Vector2() },
 	mouse:  	{value: mousePos },
 
+  bg_color:        {value: new THREE.Vector3(1.,1.,1.), gui: true, type: "color"},
+  fg_color:        {value: new THREE.Vector3(1.,1.,1.), gui: true, type: "color"},
+  hl_color:        {value: new THREE.Vector3(0.,0.,0.), gui: true, type: "color"},
+  fg_pow:      {value: 1., gui: true, min: 0.01, max: 8.0},
+  hl_pow:      {value: 1., gui: true, min: 0.01, max: 8.0},
+  hl_mul:      {value: 4., gui: true, min: 2., max: 15.},
+
 	scale:      {value: 2.0, gui: true, min: 1.0, max: 10.0},
 	seed:      {value: 0.01, gui: true, min: 0., max: 1., step: 0.01},
 	slices:      {value: 8.0, gui: true, min: 1.0, max: 20.0},
@@ -50,6 +57,7 @@ var uniforms = {
   c_fade:      {value: 0.01, gui: true, min: 0., max: 1., step: 0.01},
   cell_detail:      {value: 0.01, gui: true, min: 0.0, max: 4.0, step: 0.01},
   theta_warp:      {value: 1.5, gui: true, min: 0.0, max: 4.0},
+  warp_skew:      {value: 1.5, gui: true, min: 0.0, max: 6.0},
   edge_freq:      {value: 0.0, gui: true, min: 0.0, max: 8.0},
   edge_amp:       {value: 0.1, gui: true, min: 0.0, max: 0.5},
 
@@ -67,12 +75,7 @@ var uniforms = {
   o_distort: 	{value: new THREE.Vector2(.4,2.), gui: true, min: 0.0, max: 4.0},
 
 
-	bg_color:        {value: new THREE.Vector3(1.,1.,1.), gui: true, type: "color"},
-	fg_color:        {value: new THREE.Vector3(1.,1.,1.), gui: true, type: "color"},
-	hl_color:        {value: new THREE.Vector3(0.,0.,0.), gui: true, type: "color"},
-	fg_pow:      {value: 1., gui: true, min: 0.01, max: 3.0},
-	hl_pow:      {value: 1., gui: true, min: 0.01, max: 3.0},
-	hl_mul:      {value: 4., gui: true, min: 2., max: 15.},
+
 
 	cell_detune:      {value: .25, gui: true, min: 0., max: 1., step: 0.01},
 
@@ -105,6 +108,8 @@ function render() {
   this.uniforms.o_time.value += delta * this.uniforms.o_freq.value;
   this.uniforms.r_time.value += delta * this.uniforms.r_freq.value;
 
+  //for another type of shake...
+  //this.uniforms.cell_detune.value = .25 +  (0.5 + Math.sin(ellapsedTime) * .5 ) * Math.random() * 0.2;
 
 	uniforms.mouse.value = mousePos;
 
